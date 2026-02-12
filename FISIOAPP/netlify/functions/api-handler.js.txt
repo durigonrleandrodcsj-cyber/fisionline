@@ -1,0 +1,74 @@
+// archivo: functions/api-handler.js
+
+exports.handler = async (event, context) => {
+    // 1. Headers obligatorios siempre presentes
+    const headers = {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*", // O tu dominio específico
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type"
+    };
+
+    // 2. Manejo de preflight (OPTIONS) para CORS
+    if (event.httpMethod === "OPTIONS") {
+        return {
+            statusCode: 200,
+            headers: headers,
+            body: JSON.stringify({ message: "CORS OK" })
+        };
+    }
+
+    try {
+        // Validación básica de entrada
+        if (!event.body) {
+            throw new Error("El cuerpo de la solicitud está vacío.");
+        }
+
+        let payload;
+        try {
+            payload = JSON.parse(event.body);
+        } catch (jsonError) {
+            // Error específico de JSON malformado en la entrada
+            return {
+                statusCode: 400,
+                headers: headers,
+                body: JSON.stringify({
+                    success: false,
+                    message: "JSON de entrada inválido o malformado."
+                })
+            };
+        }
+
+        // --- LÓGICA DE NEGOCIO (Ejemplo: Guardar Log) ---
+        // Aquí iría tu conexión a DB real. Simulamos éxito.
+        const resultData = { 
+            id: Date.now(), 
+            status: "recorded",
+            received: payload 
+        };
+
+        // 3. Retorno Exitoso Estricto
+        return {
+            statusCode: 200,
+            headers: headers,
+            body: JSON.stringify({
+                success: true,
+                data: resultData
+            })
+        };
+
+    } catch (error) {
+        // 4. Retorno de Error Estricto (Nunca texto plano, nunca vacío)
+        console.error("Server Error:", error);
+        
+        return {
+            statusCode: 500, // O el código que corresponda según el error
+            headers: headers,
+            body: JSON.stringify({
+                success: false,
+                message: error.message || "Error interno del servidor",
+                code: "INTERNAL_ERROR"
+            })
+        };
+    }
+};

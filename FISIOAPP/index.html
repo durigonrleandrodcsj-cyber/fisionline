@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>VITALIA | Suite Clínica Integral</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://apis.google.com/js/api.js" async defer></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        slate: { 850: '#1e293b' },
+                        clinical: {
+                            50: '#f8fafc', 100: '#f1f5f9', 500: '#64748b', 600: '#475569', 800: '#1e293b', 900: '#0f172a',
+                            accent: '#0d9488', accentHover: '#0f766e'
+                        },
+                        brand: {
+                            dark: '#0f172a', teal: '#0d9488', red: '#e11d48', amber: '#d97706', green: '#16a34a'
+                        }
+                    },
+                    boxShadow: { 
+                        'clinical': '0 10px 40px -10px rgba(0,0,0,0.08)',
+                        'card': '0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.02)',
+                        'floating': '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+                    },
+                    animation: { 'pulse-fast': 'pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite' }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background: #f1f5f9; color: #334155; touch-action: manipulation; -webkit-font-smoothing: antialiased; }
+        .glass { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(226, 232, 240, 0.6); }
+        
+        .fade-in { animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .hidden { display: none !important; }
+
+        /* Modern Sliders */
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-thumb { 
+            -webkit-appearance: none; height: 28px; width: 28px; border-radius: 50%; 
+            background: #ffffff; cursor: pointer; border: 1px solid #e2e8f0; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-top: -12px; transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); border-color: #0d9488; }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 6px; background: #cbd5e1; border-radius: 99px; }
+
+        /* Utilities */
+        .chart-axis-text { font-family: 'Inter', sans-serif; font-weight: 600; font-size: 10px; fill: #94a3b8; }
+        .card-hover { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .card-hover:hover { transform: translateY(-4px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); }
+
+        #toast-container { position: fixed; top: 24px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 12px; pointer-events: none; }
+        .toast { background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(8px); color: white; padding: 14px 28px; border-radius: 99px; font-size: 14px; font-weight: 500; box-shadow: 0 10px 30px rgba(0,0,0,0.2); opacity: 0; transform: translateY(-20px) scale(0.95); transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); display: flex; items-center; gap: 12px; pointer-events: auto; }
+        .toast.show { opacity: 1; transform: translateY(0) scale(1); }
+        .toast-success span:first-child { color: #2dd4bf; } .toast-error span:first-child { color: #f43f5e; }
+        .toast-warn span:first-child { color: #facc15; }
+        
+        /* ACTIVE LAB */
+        .fullscreen-active { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #0f172a; }
+        .input-time { background: transparent; text-align: center; font-size: 3rem; font-weight: 800; color: #0f172a; width: 100%; outline: none; border-bottom: 2px solid #e2e8f0; border-radius: 0; transition: border-color 0.2s; }
+        .input-time:focus { border-color: #0d9488; }
+        
+        /* Modal & Gallery */
+        #modal-chart-overlay, #modal-media-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); z-index: 9998; display: none; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s; }
+        #modal-chart-overlay.active, #modal-media-overlay.active { display: flex; opacity: 1; }
+        #modal-chart-content { background: white; width: 95%; max-width: 900px; height: 80vh; border-radius: 24px; padding: 32px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); display: flex; flex-direction: column; }
+        
+        .media-grid-item { position: relative; aspect-ratio: 1; overflow: hidden; border-radius: 12px; border: 1px solid #e2e8f0; cursor: pointer; transition: transform 0.2s; }
+        .media-grid-item:hover { transform: scale(1.02); border-color: #0d9488; }
+        .media-grid-item img, .media-grid-item video { width: 100%; height: 100%; object-fit: cover; }
+        
+        /* Google Button Styles */
+        .btn-google-connect { background: #ffffff; border: 1px solid #e2e8f0; color: #475569; }
+        .btn-google-connect:hover { background: #f8fafc; border-color: #cbd5e1; }
+        .btn-google-connected { background: #ecfdf5; border: 1px solid #6ee7b7; color: #047857; cursor: default; }
+        .btn-google-disconnect { margin-left: auto; font-size: 10px; color: #ef4444; cursor: pointer; text-decoration: underline; }
+        
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #e2e8f0; border-radius: 20px; }
+    </style>
+</head>
+<body class="min-h-screen pb-24 antialiased selection:bg-teal-100 selection:text-teal-900">
+
+    <div id="toast-container"></div>
+
+    <div id="modal-chart-overlay">
+        <div id="modal-chart-content">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h3 class="text-xl font-bold text-slate-800">Evolución Clínica Detallada</h3>
+                    <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">Visualización ampliada</p>
+                </div>
+                <button onclick="closeChartModal()" class="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center font-bold text-slate-500 hover:bg-slate-100 transition-colors">✕</button>
+            </div>
+            <div class="flex-grow w-full relative bg-white rounded-xl overflow-hidden">
+                <svg id="chart-fullscreen-svg" class="w-full h-full overflow-visible" preserveAspectRatio="none"></svg>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-media-overlay" onclick="closeMediaModal(event)">
+        <div class="relative w-full max-w-4xl max-h-[90vh] flex flex-col items-center justify-center p-4">
+            <button onclick="closeMediaModal(null, true)" class="absolute -top-12 right-0 text-white font-bold text-xl opacity-80 hover:opacity-100">CERRAR ✕</button>
+            <div id="media-content-box" class="rounded-lg overflow-hidden shadow-2xl bg-black w-auto max-w-full max-h-[80vh]"></div>
+            <p id="media-caption" class="text-white mt-4 font-medium text-center bg-black/50 px-4 py-2 rounded-full backdrop-blur-sm"></p>
+        </div>
+    </div>
+
+    <div id="step-training-active" class="hidden fullscreen-active">
+        <div class="flex flex-col items-center justify-center w-full max-w-md p-6 text-center z-10 relative">
+            <h3 id="active-mode-label" class="text-xl font-bold text-slate-400 uppercase tracking-[0.2em] mb-8">MODO</h3>
+            <div id="cognitive-display" class="hidden mx-auto mb-8"></div>
+            <div id="timer-display" class="text-[7rem] sm:text-[9rem] font-black text-slate-900 leading-none tracking-tighter select-none transition-colors">00:00</div>
+            <p id="status-label" class="text-2xl font-bold text-slate-400 uppercase tracking-widest mt-4 animate-pulse">EN CURSO</p>
+            <p id="round-counter" class="text-lg font-bold text-slate-500 mt-2 hidden">Ronda 1/8</p>
+
+            <div class="grid grid-cols-2 gap-6 mt-16 w-full">
+                <button onclick="stopTraining()" class="py-5 rounded-2xl bg-slate-100 text-slate-500 font-bold text-lg hover:bg-rose-100 hover:text-rose-600 transition-colors uppercase">Terminar</button>
+                <button id="btn-pause" onclick="togglePause()" class="py-5 rounded-2xl bg-slate-900 text-white font-bold text-3xl shadow-xl hover:scale-105 transition-transform">⏸</button>
+            </div>
+        </div>
+    </div>
+
+    <nav class="glass sticky top-0 z-50 px-6 py-4 flex justify-between items-center shadow-sm">
+        <div onclick="goTo('landing')" class="cursor-pointer flex items-center gap-3 group">
+            <div class="w-10 h-10 bg-gradient-to-br from-slate-900 to-slate-800 rounded-xl flex items-center justify-center text-white font-black text-lg shadow-lg shadow-slate-900/20 group-hover:scale-105 transition-transform">V</div>
+            <div class="flex flex-col leading-none">
+                <h1 class="text-lg font-bold tracking-tight text-slate-900 group-hover:text-teal-600 transition-colors">VITALIA</h1>
+                <span class="text-[9px] uppercase tracking-[0.2em] text-slate-500 font-semibold">Medical Suite</span>
+            </div>
+        </div>
+        <div class="flex gap-3">
+            <button id="btn-logout" onclick="logoutFisio()" class="hidden bg-white text-slate-600 px-4 py-2 rounded-xl text-xs font-bold border border-slate-200 hover:bg-slate-50 hover:text-rose-600 hover:border-rose-200 transition-all shadow-sm">
+                Salir
+            </button>
+            <button id="btn-fisio-access" onclick="goTo('fisio-login')" class="hidden bg-slate-900 text-white px-5 py-2.5 rounded-xl text-xs font-bold hover:bg-slate-800 transition-all shadow-lg hover:shadow-slate-900/20 active:scale-95">
+                Área Profesional
+            </button>
+        </div>
+    </nav>
+
+    <main class="max-w-xl mx-auto p-6 space-y-8">
+
+        <div id="step-landing" class="fade-in min-h-[75vh] flex flex-col justify-center items-center text-center">
+            <div class="mb-10 scale-110">
+                <div class="relative w-24 h-24 mx-auto mb-6">
+                    <div class="absolute inset-0 bg-teal-500 rounded-3xl opacity-20 blur-xl animate-pulse"></div>
+                    <div class="relative w-full h-full bg-slate-900 rounded-3xl flex items-center justify-center text-white font-black text-5xl shadow-2xl">V</div>
+                </div>
+                <h1 class="text-5xl font-black text-slate-900 tracking-tighter mb-2">VITALIA</h1>
+                <p class="text-sm text-slate-500 uppercase tracking-widest font-bold">Plataforma Clínica Integral</p>
+            </div>
+        
+            <div class="w-full max-w-sm space-y-5">
+                <button onclick="goTo('id')" class="w-full bg-white p-5 rounded-2xl shadow-clinical border border-white hover:border-teal-500/30 transition-all group flex items-center gap-5 card-hover relative overflow-hidden">
+                    <div class="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-2xl shadow-inner group-hover:bg-white transition-colors">👤</div>
+                    <div class="text-left relative">
+                        <span class="block font-bold text-slate-800 text-lg group-hover:text-teal-700 transition-colors">Soy Paciente</span>
+                        <span class="text-xs text-slate-400 font-medium">Acceder a mi expediente</span>
+                    </div>
+                </button>
+        
+                <button onclick="goTo('fisio-login')" class="w-full bg-white p-5 rounded-2xl shadow-clinical border border-white hover:border-slate-300 transition-all group flex items-center gap-5 card-hover relative overflow-hidden">
+                    <div class="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-2xl shadow-inner group-hover:bg-slate-900 group-hover:text-white transition-colors">👨‍⚕️</div>
+                    <div class="text-left">
+                        <span class="block font-bold text-slate-800 text-lg">Soy Fisioterapeuta</span>
+                        <span class="text-xs text-slate-400 font-medium">Gestión clínica y agenda</span>
+                    </div>
+                </button>
+
+                <button onclick="goTo('training-menu')" class="w-full bg-slate-900 p-5 rounded-2xl shadow-xl shadow-slate-900/20 border border-slate-800 hover:bg-slate-800 transition-all group flex items-center gap-5 relative overflow-hidden mt-4">
+                    <div class="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center text-white text-2xl backdrop-blur-sm">⚡</div>
+                    <div class="text-left">
+                        <span class="block font-bold text-white text-lg">Active Lab</span>
+                        <span class="text-xs text-slate-400 font-medium">Entrenamiento Cognitivo</span>
+                    </div>
+                </button>
+            </div>
+        </div>
+
+        <div id="step-fisio-login" class="hidden fade-in bg-white p-8 rounded-3xl shadow-floating border border-slate-100 max-w-sm mx-auto mt-6 relative">
+            <button onclick="goTo('landing')" class="absolute top-6 left-6 text-slate-400 hover:text-slate-800 transition-colors text-xs font-bold uppercase tracking-widest">← Volver</button>
+            <div class="text-center mt-6 mb-8">
+                <div class="w-12 h-12 bg-slate-100 rounded-xl mx-auto flex items-center justify-center text-xl mb-3">🔒</div>
+                <h3 class="font-bold text-slate-900 text-xl">Acceso Profesional</h3>
+            </div>
+            <div class="space-y-6">
+                <div id="fisio-login-form" class="space-y-4">
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-bold uppercase text-slate-400 tracking-wider ml-1">Usuario Local</label>
+                        <select id="f-user" class="w-full p-4 bg-slate-50 rounded-xl border border-transparent focus:border-slate-300 text-sm font-semibold outline-none"></select>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-bold uppercase text-slate-400 tracking-wider ml-1">Contraseña</label>
+                        <input type="password" id="f-pass" placeholder="••••••••" class="w-full p-4 bg-slate-50 rounded-xl border border-transparent focus:border-slate-300 text-sm outline-none">
+                    </div>
+                    <button onclick="loginFisio()" class="w-full bg-slate-900 text-white py-4 rounded-xl font-bold text-sm shadow-lg hover:bg-slate-800">Ingresar Local</button>
+                </div>
+            </div>
+            <div class="mt-8 pt-6 border-t border-slate-100 text-center">
+                <button onclick="toggleFisioForms()" class="py-2 text-[10px] font-bold uppercase text-slate-400 hover:text-teal-600 transition-colors">Crear Nueva Cuenta</button>
+            </div>
+            <div id="fisio-reg-form" class="hidden space-y-3 mt-4 bg-slate-50 p-5 rounded-2xl border border-slate-100">
+                <input type="text" id="new-f-name" placeholder="Nombre Completo" class="w-full p-3 bg-white text-xs outline-none border-none rounded-lg shadow-sm">
+                <input type="text" id="new-f-user" placeholder="Usuario" class="w-full p-3 bg-white text-xs outline-none border-none rounded-lg shadow-sm">
+                <input type="password" id="new-f-pass" placeholder="Contraseña" class="w-full p-3 bg-white text-xs outline-none border-none rounded-lg shadow-sm">
+                <button onclick="registerFisio()" class="w-full bg-teal-600 text-white py-3 rounded-lg font-bold text-xs uppercase hover:bg-teal-700">Registrar</button>
+            </div>
+        </div>
+
+        <div id="step-fisio-dash" class="hidden fade-in space-y-6">
+            <div class="bg-slate-900 p-6 rounded-3xl text-white shadow-xl shadow-slate-900/10 flex justify-between items-center relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-white opacity-5 rounded-full blur-2xl -mr-10 -mt-10"></div>
+                <div class="relative z-10">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="w-2 h-2 rounded-full bg-teal-400 animate-pulse"></span>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Panel Profesional</p>
+                    </div>
+                    <h2 id="fisio-name" class="text-2xl font-black text-white tracking-tight"></h2>
+                    <p id="google-sync-badge" class="hidden text-[10px] mt-2 text-emerald-400 flex items-center gap-1.5 font-bold bg-emerald-500/10 px-2 py-1 rounded-md w-fit border border-emerald-500/20">✓ Google Calendar Sincronizado</p>
+                </div>
+            </div>
+
+            <div class="flex p-1.5 bg-white rounded-2xl shadow-card border border-slate-100 overflow-x-auto">
+                <button onclick="switchDashTab('analisis')" id="tab-btn-analisis" class="flex-1 py-3 px-3 text-xs font-bold uppercase rounded-xl transition-all bg-slate-900 text-white shadow-md">📊 Análisis</button>
+                <button onclick="switchDashTab('rutinas')" id="tab-btn-rutinas" class="flex-1 py-3 px-3 text-xs font-bold uppercase rounded-xl transition-all text-slate-500 hover:bg-slate-50 hover:text-slate-900">📝 Pautas</button>
+                <button onclick="switchDashTab('pacientes')" id="tab-btn-pacientes" class="flex-1 py-3 px-3 text-xs font-bold uppercase rounded-xl transition-all text-slate-500 hover:bg-slate-50 hover:text-slate-900">📅 Agenda</button>
+            </div>
+        
+            <div id="tab-content-analisis" class="space-y-6 fade-in">
+                <div class="bg-white p-6 rounded-3xl shadow-card border border-slate-100">
+                    <select id="analisis-paciente-selector" onchange="renderAnalisis(this.value)" class="w-full p-4 bg-slate-50 rounded-xl text-sm font-bold text-slate-800 border-r-8 border-transparent focus:bg-white outline-none cursor-pointer hover:bg-slate-100 transition-colors appearance-none mb-6"></select>
+                    
+                    <div id="patient-info-mini" class="hidden bg-slate-50 p-5 rounded-2xl border border-slate-100 mb-6 relative overflow-hidden">
+                        <div class="absolute left-0 top-0 w-1 h-full bg-teal-500"></div>
+                        <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">Motivo Consulta</p>
+                        <p id="display-motivo-fisio" class="text-sm font-medium text-slate-800 italic leading-relaxed">...</p>
+                    </div>
+        
+                    <div class="grid grid-cols-2 gap-3 mb-8">
+                        <button onclick="prepararTestClinico()" class="bg-teal-50 border border-teal-100 text-teal-700 py-4 rounded-xl text-xs font-bold hover:bg-teal-100 hover:shadow-sm transition-all flex flex-col items-center justify-center gap-2 group">
+                            <span class="text-xl">📷</span><span>Nuevo Hallazgo</span>
+                        </button>
+                        <button onclick="exportMyData()" class="bg-white border border-slate-200 text-slate-600 py-4 rounded-xl text-xs font-bold hover:bg-slate-50 hover:border-slate-300 transition-all flex flex-col items-center justify-center gap-2 group">
+                            <span class="text-xl">⬇️</span><span>Exportar Data</span>
+                        </button>
+                    </div>
+        
+                    <div id="chart-container" class="hidden mt-8 border-t border-slate-100 pt-8">
+                        <div class="flex justify-between items-center mb-6">
+                            <div class="flex items-center gap-2"><span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Evolución</span></div>
+                            <div class="flex gap-2">
+                                <button onclick="openChartModal()" class="bg-slate-100 hover:bg-slate-200 w-8 h-8 rounded-lg flex items-center justify-center text-slate-600 transition-colors">⤢</button>
+                                <div class="flex bg-slate-50 p-1 rounded-lg border border-slate-200 gap-1">
+                                    <button onclick="setChartRange(7)" id="btn-r-7" class="btn-range text-[9px] font-bold px-2 py-1 rounded-md text-slate-400">7D</button>
+                                    <button onclick="setChartRange(30)" id="btn-r-30" class="btn-range text-[9px] font-bold px-2 py-1 rounded-md text-slate-400">30D</button>
+                                    <button onclick="setChartRange('all')" id="btn-r-all" class="btn-range text-[9px] font-bold px-2 py-1 rounded-md bg-white shadow-sm text-slate-800">ALL</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="relative h-60 w-full bg-white rounded-xl border border-slate-100 p-2 shadow-inner">
+                            <svg id="trend-chart" class="w-full h-full overflow-visible" viewBox="0 0 300 150" preserveAspectRatio="none"></svg>
+                        </div>
+                        <div class="mt-8">
+                             <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wide mb-4 flex items-center gap-2"><span class="text-lg">📂</span> Hallazgos Multimedia</h4>
+                             <div id="analisis-gallery" class="grid grid-cols-3 gap-3"></div>
+                        </div>
+                    </div>
+                    <div id="no-data-msg" class="text-center py-16">
+                        <div class="text-4xl mb-3 opacity-20">📉</div>
+                        <p class="text-sm font-medium text-slate-400">Seleccione un paciente para ver datos</p>
+                    </div>
+                </div>
+            </div>
+        
+            <div id="tab-content-rutinas" class="hidden space-y-6 fade-in">
+                <div class="bg-white p-6 rounded-3xl shadow-card border border-slate-100">
+                    <div class="flex items-center gap-2 mb-6">
+                        <span class="w-8 h-8 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center text-sm">📝</span>
+                        <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wide">Nueva Pauta</h3>
+                    </div>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 ml-1">Paciente Destino</label>
+                            <select id="prog-p-selector" class="w-full p-4 bg-slate-50 rounded-xl border-none text-sm font-semibold outline-none focus:ring-2 focus:ring-amber-100 transition-all"></select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1.5 ml-1">Descripción</label>
+                            <textarea id="prog-text" rows="5" class="w-full p-4 bg-slate-50 rounded-xl border-none text-sm font-medium outline-none focus:ring-2 focus:ring-amber-100 resize-none transition-all"></textarea>
+                        </div>
+                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                            <span class="block text-[10px] font-bold text-slate-400 uppercase mb-3 ml-1 flex items-center gap-1">🔗 Recurso Externo</span>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <input type="text" id="prog-link-name" placeholder="Título" class="p-3 bg-white rounded-lg border-none text-xs outline-none shadow-sm">
+                                <input type="url" id="prog-link-url" placeholder="https://..." class="p-3 bg-white rounded-lg border-none text-xs outline-none shadow-sm text-blue-600">
+                            </div>
+                        </div>
+                    </div>
+                    <button onclick="saveRoutine()" class="w-full mt-6 bg-slate-800 text-white py-4 rounded-xl font-bold uppercase text-xs hover:bg-slate-900 shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2">Publicar Pauta 🚀</button>
+                </div>
+            </div>
+        
+            <div id="tab-content-pacientes" class="hidden space-y-6 fade-in">
+                <div class="bg-white p-6 rounded-3xl shadow-card border border-slate-100 relative overflow-hidden">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-xs font-bold text-blue-900 uppercase tracking-widest flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-blue-500"></span> Agenda Clínica
+                        </h3>
+                        <div id="g-connect-container"></div>
+                    </div>
+                    
+                    <div id="g-warning-box" class="hidden bg-amber-50 p-3 rounded-xl border border-amber-200 text-[10px] text-amber-700 font-semibold mb-4 text-center"></div>
+
+                    <div id="calendar-form-container" class="bg-blue-50/50 p-5 rounded-2xl border border-blue-100 mb-6 backdrop-blur-sm transition-all duration-300">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div class="space-y-1">
+                                <label class="block text-[10px] font-bold text-blue-400 uppercase ml-1">Fecha y Hora</label>
+                                <input type="datetime-local" id="agenda-date" class="w-full p-3 bg-white rounded-xl border border-blue-100 text-xs font-bold text-slate-700 outline-none focus:border-blue-300 transition-colors">
+                            </div>
+                            <div class="space-y-1">
+                                 <label class="block text-[10px] font-bold text-blue-400 uppercase ml-1">Paciente</label>
+                                 <select id="agenda-patient-selector" class="w-full p-3 bg-white rounded-xl border border-blue-100 text-xs outline-none h-[42px] font-bold text-slate-700 cursor-pointer focus:border-blue-300"></select>
+                            </div>
+                        </div>
+                        
+                        <button onclick="processAppointment()" class="w-full bg-blue-600 text-white px-4 py-3.5 rounded-xl text-xs font-bold hover:bg-blue-700 shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2 transition-all active:scale-95">
+                            <span>Agendar Cita (Local + Sync)</span> 📅
+                        </button>
+                    </div>
+                    
+                    <div class="border-t border-slate-100 pt-6">
+                        <p class="text-[10px] font-bold text-slate-400 uppercase mb-3 ml-1">Próximas Citas</p>
+                        <div id="agenda-list" class="space-y-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar"></div>
+                    </div>
+                </div>
+                
+                <div class="pt-6 mt-4 border-t border-slate-200/50">
+                     <button onclick="deletePatient()" class="w-full py-3.5 text-[10px] font-bold text-rose-500 border border-rose-100 bg-rose-50 rounded-xl hover:bg-rose-100 hover:border-rose-200 transition-all uppercase flex items-center justify-center gap-2">
+                        <span>🗑️</span> Eliminar Expediente Actual
+                     </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="step-training-menu" class="hidden fade-in space-y-6">
+            <div class="flex justify-between items-center mb-2">
+                <h2 class="text-2xl font-black text-slate-900 tracking-tight">ACTIVE LAB</h2>
+                <button onclick="goTo('landing')" class="bg-white border border-slate-200 text-slate-500 px-4 py-2 rounded-xl text-xs font-bold hover:bg-slate-50 transition-colors">Volver</button>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <button onclick="setupTraining('AMRAP')" class="btn-big bg-white p-6 rounded-3xl border border-white shadow-card hover:shadow-xl flex flex-col items-center gap-4 hover:border-teal-100 group transition-all">
+                    <span class="text-4xl group-hover:scale-110 transition-transform">🔥</span><span class="font-bold text-slate-800 text-sm">AMRAP</span>
+                </button>
+                <button onclick="setupTraining('EMOM')" class="btn-big bg-white p-6 rounded-3xl border border-white shadow-card hover:shadow-xl flex flex-col items-center gap-4 hover:border-teal-100 group transition-all">
+                    <span class="text-4xl group-hover:scale-110 transition-transform">⏱️</span><span class="font-bold text-slate-800 text-sm">EMOM</span>
+                </button>
+                <button onclick="setupTraining('TABATA')" class="btn-big bg-white p-6 rounded-3xl border border-white shadow-card hover:shadow-xl flex flex-col items-center gap-4 hover:border-teal-100 group transition-all">
+                    <span class="text-4xl group-hover:scale-110 transition-transform">⚡</span><span class="font-bold text-slate-800 text-sm">TABATA</span>
+                </button>
+                <button onclick="setupTraining('COGNITIVO')" class="btn-big bg-slate-900 p-6 rounded-3xl border border-slate-800 shadow-xl shadow-slate-900/20 flex flex-col items-center gap-4 group transition-all hover:bg-slate-800">
+                    <span class="text-4xl group-hover:scale-110 transition-transform">🧠</span><span class="font-bold text-white text-sm">Reacción</span>
+                </button>
+            </div>
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 mt-4 flex justify-between items-center">
+                <span class="text-xs font-bold text-slate-500 uppercase ml-2">Feedback Sonoro</span>
+                <button id="btn-sound" onclick="toggleSound()" class="w-12 h-12 flex items-center justify-center bg-slate-50 rounded-full shadow-inner border border-slate-100 text-xl hover:bg-slate-100 transition-colors">🔊</button>
+            </div>
+        </div>
+
+        <div id="step-training-setup" class="hidden fade-in min-h-[60vh] flex flex-col justify-center">
+            <h2 id="setup-title" class="text-4xl font-black text-slate-900 text-center mb-1">CONFIGURAR</h2>
+            <p id="setup-desc" class="text-xs text-center text-slate-400 mb-10 uppercase tracking-widest font-bold">Parámetros de sesión</p>
+            <div id="training-inputs-container" class="space-y-8 bg-white p-8 rounded-3xl shadow-floating border border-slate-50 mb-10"></div>
+            <div class="grid grid-cols-2 gap-5">
+                <button onclick="goTo('training-menu')" class="py-4 rounded-2xl font-bold text-xs uppercase bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors">Cancelar</button>
+                <button onclick="startTraining()" class="py-4 rounded-2xl font-bold text-xs uppercase bg-slate-900 text-white hover:bg-slate-800 shadow-xl shadow-slate-900/20 transition-all hover:-translate-y-1">COMENZAR ▶</button>
+            </div>
+        </div>
+
+        <div id="step-training-results" class="hidden fade-in bg-white p-8 rounded-3xl shadow-floating border border-slate-100 mt-10">
+             <div class="w-16 h-16 bg-teal-50 rounded-full mx-auto flex items-center justify-center text-3xl mb-4">🏆</div>
+             <h3 class="text-center font-bold text-slate-900 mb-2 text-2xl">Sesión Finalizada</h3>
+             <p id="res-mode-display" class="text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-8 bg-slate-50 py-1 px-3 rounded-full w-fit mx-auto"></p>
+             <div class="space-y-6">
+                 <div>
+                     <label class="block text-[10px] font-bold text-slate-400 uppercase mb-2 ml-1">Asociar a Paciente</label>
+                     <select id="res-patient" class="w-full p-4 bg-slate-50 rounded-xl border-none text-sm font-bold outline-none focus:ring-2 focus:ring-teal-100 transition-all"></select>
+                 </div>
+                 <div id="res-metric-container"></div>
+             </div>
+             <div class="grid grid-cols-2 gap-4 mt-10">
+                 <button onclick="goTo('training-menu')" class="py-4 rounded-xl font-bold text-xs uppercase bg-slate-50 text-slate-500 hover:bg-slate-100">Descartar</button>
+                 <button onclick="saveTrainingResult()" class="py-4 rounded-xl font-bold text-xs uppercase bg-slate-900 text-white shadow-lg hover:shadow-xl transition-all">Guardar Datos</button>
+             </div>
+        </div>
+        
+        <div id="step-externo" class="hidden fade-in">
+             <div class="bg-white p-8 rounded-3xl shadow-floating border border-slate-100 relative">
+                <button onclick="goTo('fisio-dash')" class="absolute top-6 right-6 text-slate-300 hover:text-slate-800 transition-colors text-xs font-bold uppercase tracking-widest">Cancelar</button>
+                <div class="mb-6">
+                    <h3 class="font-bold text-slate-900 text-xl flex items-center gap-2"><span class="w-8 h-8 rounded-lg bg-teal-100 flex items-center justify-center text-teal-700 text-sm">📷</span>Nuevo Hallazgo</h3>
+                </div>
+                <div class="space-y-6">
+                    <div id="box-fisio-patient-select" class="hidden bg-slate-50 p-4 rounded-xl border border-teal-100/50">
+                        <label class="block text-[10px] font-bold text-teal-600 uppercase mb-1 ml-1">Paciente Evaluado</label>
+                        <input type="text" id="ext-patient-manual" class="w-full bg-transparent text-sm font-black text-slate-800 outline-none" readonly>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-2 ml-1">Título de la Prueba</label>
+                        <input type="text" id="ext-nombre" placeholder="Ej: Test de movilidad hombro" class="w-full p-4 bg-slate-50 rounded-xl border-none text-sm outline-none focus:bg-white focus:ring-2 focus:ring-slate-100 transition-all font-semibold">
+                    </div>
+                    <div class="border-2 border-dashed border-slate-200 rounded-2xl p-6 text-center hover:bg-slate-50 hover:border-teal-300 transition-all group cursor-pointer relative">
+                        <input type="file" id="ext-foto-input" accept="image/*,video/*" multiple class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onchange="procesarArchivos(this)">
+                        <div class="text-4xl mb-2 text-slate-300 group-hover:text-teal-400 transition-colors">☁️</div>
+                        <p class="text-xs font-bold text-slate-600">Toca para subir Fotos o Videos</p>
+                    </div>
+                    <div id="upload-preview-grid" class="grid grid-cols-3 gap-3 hidden"></div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-2 ml-1">Notas Clínicas</label>
+                        <textarea id="ext-obs" rows="3" class="w-full p-4 bg-slate-50 rounded-xl border-none text-sm outline-none resize-none focus:bg-white focus:ring-2 focus:ring-slate-100 transition-all"></textarea>
+                    </div>
+                </div>
+                <button onclick="finalizar('EXTERNO')" class="w-full mt-8 bg-slate-900 hover:bg-slate-800 text-white py-4 rounded-xl font-bold text-sm uppercase shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2"><span>Guardar Evidencia</span> 💾</button>
+             </div>
+        </div>
+
+        <div id="step-id" class="hidden fade-in">
+            <div class="bg-white p-8 rounded-3xl shadow-floating border border-slate-100 relative max-w-sm mx-auto">
+                <button onclick="goTo('landing')" class="absolute top-6 right-6 text-slate-300 hover:text-slate-800 transition-colors text-xs font-bold uppercase tracking-widest">Cancelar</button>
+                <div class="mb-8 mt-2">
+                    <h2 class="text-2xl font-black text-slate-900 mb-2">Bienvenido</h2>
+                    <p class="text-sm text-slate-500 leading-relaxed font-medium">Ingresa tus datos para acceder a tu expediente digital seguro.</p>
+                </div>
+                <div class="space-y-5">
+                    <div class="space-y-1">
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Nombre Completo</label>
+                        <input type="text" id="pName" oninput="autoFill(this.value)" class="w-full p-4 bg-slate-50 rounded-xl border-none text-sm font-bold text-slate-900 focus:ring-2 focus:ring-teal-100 outline-none transition-all" autocomplete="off">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="space-y-1">
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Edad</label>
+                            <input type="number" id="pAge" oninput="logicPeriodo()" class="w-full p-4 bg-slate-50 rounded-xl border-none text-sm font-bold focus:ring-2 focus:ring-teal-100 outline-none transition-all">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Sexo</label>
+                            <select id="pSexo" onchange="logicPeriodo()" class="w-full p-4 bg-slate-50 rounded-xl border-none text-sm text-slate-600 font-bold focus:ring-2 focus:ring-teal-100 outline-none transition-all cursor-pointer">
+                                <option value="">...</option><option value="Masculino">Masculino</option><option value="Femenino">Femenino</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="space-y-1">
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Motivo Consulta</label>
+                        <textarea id="pMotivo" rows="2" class="w-full p-4 bg-slate-50 rounded-xl border-none text-sm font-medium text-slate-900 focus:ring-2 focus:ring-teal-100 outline-none resize-none"></textarea>
+                    </div>
+                    <div class="space-y-1">
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Profesional Asignado</label>
+                        <select id="pFisio" class="w-full p-4 bg-slate-50 rounded-xl border-none text-sm font-bold text-slate-900 focus:ring-2 focus:ring-teal-100 outline-none appearance-none cursor-pointer"></select>
+                    </div>
+                    <div id="box-periodo" class="hidden p-5 bg-rose-50 rounded-xl border border-rose-100 fade-in">
+                        <label class="text-xs font-bold text-rose-700 mb-2 block flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span> Salud Menstrual</label>
+                        <input type="date" id="pFechaPeriodo" class="w-full p-2 bg-white rounded-lg border-none text-xs text-rose-900 font-bold outline-none shadow-sm">
+                    </div>
+                </div>
+                <button onclick="acceder()" class="w-full mt-8 bg-slate-900 hover:bg-slate-800 text-white py-4 rounded-xl font-bold text-sm shadow-xl shadow-slate-900/10 transition-all hover:-translate-y-1">INICIAR SESIÓN</button>
+            </div>
+        </div>
+
+        <div id="step-menu" class="hidden fade-in space-y-6">
+            <div class="text-center mb-6">
+                 <h2 class="text-xl font-bold text-slate-900">Hola, Paciente</h2>
+                 <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">¿Qué deseas hacer hoy?</p>
+            </div>
+            <button onclick="goTo('diario')" class="w-full bg-white p-6 rounded-3xl border border-white shadow-card hover:shadow-xl transition-all flex items-center gap-6 group relative overflow-hidden transform hover:-translate-y-1">
+                <div class="w-16 h-16 bg-teal-50 rounded-2xl flex items-center justify-center text-3xl text-teal-600 shadow-inner group-hover:scale-110 transition-transform">📊</div>
+                <div class="text-left">
+                    <span class="block font-bold text-slate-800 text-lg mb-1">Registro Diario</span>
+                    <span class="text-xs text-slate-400 font-medium">Reportar dolor, sueño y carga.</span>
+                </div>
+            </button>
+            <button onclick="renderISI(); goTo('isi')" class="w-full bg-white p-6 rounded-3xl border border-white shadow-card hover:shadow-xl transition-all flex items-center gap-6 group relative overflow-hidden transform hover:-translate-y-1">
+                <div class="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center text-3xl text-indigo-600 shadow-inner group-hover:scale-110 transition-transform">🌙</div>
+                <div class="text-left">
+                    <span class="block font-bold text-slate-800 text-lg mb-1">Test de Sueño (ISI)</span>
+                    <span class="text-xs text-slate-400 font-medium">Evaluar calidad del descanso.</span>
+                </div>
+            </button>
+            <button onclick="loadRoutine(); goTo('prog')" class="bg-gradient-to-br from-slate-800 to-slate-900 p-6 rounded-3xl shadow-lg shadow-slate-900/20 transition-all text-center w-full group transform hover:-translate-y-1 mt-2">
+                <div class="text-3xl mb-3 group-hover:scale-110 transition-transform">📝</div>
+                <span class="text-sm font-bold text-white block">Ver Mi Tratamiento</span>
+            </button>
+            <div class="pt-8 text-center">
+                <button onclick="logoutPatient()" class="text-xs font-bold text-slate-400 hover:text-rose-500 transition-colors py-2 px-6 rounded-full bg-slate-100 hover:bg-rose-50">Cerrar Sesión</button>
+            </div>
+        </div>
+
+        <div id="step-diario" class="hidden fade-in space-y-6">
+            <div class="bg-white p-8 rounded-3xl shadow-floating border border-slate-100 relative max-w-md mx-auto">
+                <button onclick="goTo('menu')" class="absolute top-6 right-6 text-slate-300 hover:text-slate-800 transition-colors text-xs font-bold uppercase tracking-widest">Cancelar</button>
+                <div id="box-periodo-update" class="hidden mb-8 p-5 bg-rose-50 rounded-2xl border border-rose-100">
+                    <label class="text-xs font-bold text-rose-800 uppercase tracking-wider block mb-2 flex items-center gap-2"><span class="text-lg">🩸</span> Nuevo Ciclo</label>
+                    <input type="date" id="in-periodo-update" class="w-full p-3 bg-white rounded-xl border-none text-sm text-rose-900 font-bold outline-none shadow-sm">
+                </div>
+                <div class="mb-12">
+                    <div class="flex justify-between items-end mb-6">
+                        <label class="text-xs font-bold text-slate-400 uppercase tracking-widest">Nivel de Dolor</label>
+                        <span id="v-dolor" class="text-5xl font-black text-slate-800 tracking-tighter transition-colors">0</span>
+                    </div>
+                    <input type="range" id="in-dolor" min="0" max="10" value="0" oninput="updatePain(this.value)">
+                    <p id="dolor-txt" class="text-sm font-bold text-teal-600 mt-4 text-center transition-colors bg-teal-50 py-2 rounded-lg">Sin dolor</p>
+                </div>
+                <div class="space-y-10">
+                    <div>
+                        <div class="flex justify-between mb-4 items-center">
+                            <label class="text-xs font-bold text-slate-400 uppercase tracking-wider">Calidad Sueño</label>
+                            <span id="v-sueno" class="font-bold text-sm text-slate-800 bg-slate-100 px-3 py-1 rounded-lg">5/10</span>
+                        </div>
+                        <input type="range" id="in-sueno" min="1" max="10" value="5" oninput="updateSleep(this.value)">
+                        <p id="sueno-txt" class="text-xs font-bold text-center mt-2 text-indigo-500 transition-colors">Regular</p>
+                    </div>
+                    <div>
+                        <div class="flex justify-between mb-4 items-center">
+                            <label class="text-xs font-bold text-slate-400 uppercase tracking-wider">Recuperación</label>
+                            <span id="v-desc" class="font-bold text-sm text-slate-800 bg-slate-100 px-3 py-1 rounded-lg">5/10</span>
+                        </div>
+                        <input type="range" id="in-desc" min="1" max="10" value="5" oninput="updateRest(this.value)">
+                         <p id="desc-txt" class="text-xs font-bold text-center mt-2 text-blue-500 transition-colors">Energía Media</p>
+                    </div>
+                </div>
+                <div class="mt-12 p-6 bg-slate-50 rounded-3xl border border-slate-100">
+                    <div class="flex justify-between items-center mb-6">
+                        <label class="text-xs font-bold text-slate-800 uppercase tracking-wider">Esfuerzo (RPE)</label>
+                        <span id="v-rpe" class="text-3xl font-black text-slate-800">0</span>
+                    </div>
+                    <input type="range" id="in-rpe" min="0" max="10" value="0" oninput="updateRPE(this.value)">
+                    <div class="mt-6 flex items-center justify-between border-t border-slate-200 pt-5">
+                        <span id="rpe-lbl" class="text-[10px] font-bold text-slate-500 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm">Reposo Total</span>
+                        <div class="flex items-center gap-2 bg-white rounded-lg p-1 border border-slate-200 shadow-sm">
+                            <input type="number" id="in-min" placeholder="0" class="w-12 text-right text-sm font-bold bg-transparent outline-none p-1">
+                            <span class="text-[9px] font-bold text-slate-400 pr-2">MIN</span>
+                        </div>
+                    </div>
+                </div>
+                <button onclick="finalizar('DIARIO')" class="w-full mt-10 bg-slate-900 hover:bg-slate-800 text-white py-5 rounded-2xl font-bold text-sm uppercase shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-1">Guardar Registro Diario</button>
+            </div>
+        </div>
+
+        <div id="step-isi" class="hidden fade-in">
+            <div class="bg-white p-8 rounded-3xl shadow-floating border border-slate-100 relative">
+                <button onclick="goTo('menu')" class="absolute top-6 right-6 text-slate-300 hover:text-slate-800 transition-colors text-xs font-bold uppercase tracking-widest">Cancelar</button>
+                <div class="text-center mb-8">
+                    <h3 class="text-2xl font-black text-slate-900 mb-1">Test ISI</h3>
+                    <p class="text-xs text-slate-400 uppercase font-bold tracking-widest">Índice de Severidad de Insomnio</p>
+                </div>
+                <div id="isi-box" class="space-y-10"></div>
+                <button onclick="finalizar('ISI')" class="w-full mt-12 bg-slate-900 hover:bg-slate-800 text-white py-5 rounded-2xl font-bold text-sm uppercase shadow-xl hover:shadow-2xl transition-all">Finalizar Evaluación</button>
+            </div>
+        </div>
+
+        <div id="step-prog" class="hidden fade-in">
+             <div class="bg-white p-8 rounded-3xl shadow-floating border border-slate-100 relative min-h-[50vh]">
+                <button onclick="goTo('menu')" class="absolute top-6 right-6 text-slate-300 hover:text-slate-800 transition-colors text-xs font-bold uppercase tracking-widest">Volver</button>
+                <h3 class="font-black text-slate-900 mb-8 uppercase text-xs tracking-widest flex items-center gap-3 border-b border-slate-100 pb-4"><span class="text-2xl">📝</span> Tu Plan de Tratamiento</h3>
+                <div id="prog-view" class="p-8 bg-slate-50 rounded-2xl text-sm font-medium text-slate-700 whitespace-pre-line border border-slate-100 leading-relaxed shadow-inner"></div>
+                <div id="prog-file-box" class="hidden mt-6 bg-white p-5 rounded-2xl border border-slate-200 flex items-center justify-between cursor-pointer hover:border-teal-400 hover:shadow-md transition-all group" onclick="abrirAdjunto()">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-teal-50 flex items-center justify-center text-xl text-teal-600 group-hover:bg-teal-100 transition-colors">🔗</div>
+                        <div><span class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Material de Apoyo</span><span id="prog-file-name" class="text-sm font-bold text-slate-800 underline decoration-teal-400 decoration-2 underline-offset-2">Ver Recurso</span></div>
+                    </div>
+                </div>
+             </div>
+        </div>
+
+    </main>
+
+    <script>
+        // ==========================================
+        // 1. SISTEMA DE AUTENTICACIÓN ROBUSTO (FIX)
+        // ==========================================
+        const CLIENT_ID = '1093320987210-dno3cbj0cl4kqtq6lfpo4me60gk9j0ia.apps.googleusercontent.com';
+        const SCOPES = 'https://www.googleapis.com/auth/calendar.events';
+        const DISCOVERY_DOCS = ['https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest'];
+
+        let tokenClient;
+        let gapiInited = false;
+        let gisInited = false;
+        let isEnvValid = false;
+        
+        // Control de carga de librerías
+        let googleLibsLoaded = { gsi: false, gapi: false };
+
+        // Intervalo para verificar si Google API está listo (Causa Raíz Solucionada)
+        const libCheckInterval = setInterval(() => {
+            if (typeof google !== 'undefined' && typeof google.accounts !== 'undefined') googleLibsLoaded.gsi = true;
+            if (typeof gapi !== 'undefined') googleLibsLoaded.gapi = true;
+            
+            if (googleLibsLoaded.gsi && googleLibsLoaded.gapi) {
+                clearInterval(libCheckInterval);
+                initGoogleAuth();
+            }
+        }, 500);
+
+        function initGoogleAuth() {
+            // 1. Verificación de Entorno (Crucial para SaaS)
+            if (window.location.protocol === 'file:') {
+                console.warn("⚠️ Google Auth requiere servidor (http/https).");
+                const wb = document.getElementById('g-warning-box');
+                if(wb) {
+                    wb.classList.remove('hidden');
+                    wb.innerHTML = "⚠️ MODO DESCONECTADO: Para sincronizar Google Calendar, abre este archivo en un servidor local (localhost) en lugar de hacer doble clic.";
+                }
+                isEnvValid = false;
+                updateGoogleUI(false);
+                return;
+            }
+            
+            isEnvValid = true;
+
+            // 2. Inicializar Token Client (GIS)
+            try {
+                tokenClient = google.accounts.oauth2.initTokenClient({
+                    client_id: CLIENT_ID,
+                    scope: SCOPES,
+                    callback: '', // Se define dinámicamente al solicitar
+                });
+                gisInited = true;
+            } catch (e) { console.error("Error GIS init:", e); }
+
+            // 3. Inicializar GAPI Client
+            gapi.load('client', async () => {
+                try {
+                    await gapi.client.init({ discoveryDocs: DISCOVERY_DOCS });
+                    gapiInited = true;
+                    checkTokenValidity(); // Restaurar sesión si existe
+                } catch (error) {
+                    console.error("Error GAPI init:", error);
+                    showToast("Error conectando con servicios de Google", "error");
+                }
+            });
+        }
+
+        // 2. GESTIÓN DE TOKEN (LOCAL STORAGE)
+        function checkTokenValidity() {
+            const stored = localStorage.getItem('g_access_token');
+            if (stored) {
+                try {
+                    const tokenData = JSON.parse(stored);
+                    const now = Date.now();
+                    // Verificar expiración (con 1 min de margen)
+                    if (now < tokenData.expirationTime - 60000) {
+                        gapi.client.setToken(tokenData.tokenObj);
+                        updateGoogleUI(true);
+                    } else {
+                        localStorage.removeItem('g_access_token');
+                        updateGoogleUI(false);
+                    }
+                } catch (e) {
+                    localStorage.removeItem('g_access_token');
+                }
+            } else {
+                updateGoogleUI(false);
+            }
+        }
+
+        // 3. FLUJO DE AUTORIZACIÓN (CLICK EN BOTÓN)
+        function handleAuthClick() {
+            if (!isEnvValid) return showToast("Google API requiere http/https (localhost)", "error");
+            if (!gapiInited || !gisInited) return showToast("Cargando servicios Google...", "warn");
+
+            tokenClient.callback = (resp) => {
+                if (resp.error) throw resp;
+                const expirationTime = Date.now() + (resp.expires_in * 1000);
+                const tokenStore = { tokenObj: resp, expirationTime: expirationTime };
+                localStorage.setItem('g_access_token', JSON.stringify(tokenStore));
+                gapi.client.setToken(resp);
+                showToast("Google Calendar conectado exitosamente", "success");
+                updateGoogleUI(true);
+            };
+
+            if (gapi.client.getToken() === null) {
+                tokenClient.requestAccessToken({prompt: 'consent'});
+            } else {
+                tokenClient.requestAccessToken({prompt: ''});
+            }
+        }
+
+        function disconnectGoogle() {
+            const token = gapi.client.getToken();
+            if (token !== null) {
+                google.accounts.oauth2.revoke(token.access_token);
+                gapi.client.setToken('');
+                localStorage.removeItem('g_access_token');
+                updateGoogleUI(false);
+                showToast("Desconectado de Google Calendar", "success");
+            }
+        }
+
+        function updateGoogleUI(isConnected) {
+            const container = document.getElementById('g-connect-container');
+            const badge = document.getElementById('google-sync-badge');
+            const warningBox = document.getElementById('g-warning-box');
+
+            if (!container) return;
+
+            if (isConnected) {
+                container.innerHTML = `
+                    <div class="flex flex-col items-end">
+                        <button class="btn-google-connected px-4 py-2 rounded-xl text-xs font-bold shadow-sm flex items-center gap-2 mb-1">
+                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                            Conectado
+                        </button>
+                        <span onclick="disconnectGoogle()" class="btn-google-disconnect">Desconectar</span>
+                    </div>
+                `;
+                if (badge) badge.classList.remove('hidden');
+                if (warningBox) warningBox.classList.add('hidden');
+            } else {
+                container.innerHTML = `
+                    <button onclick="handleAuthClick()" class="btn-google-connect px-4 py-2 rounded-xl text-xs font-bold shadow-sm flex items-center gap-2 hover:shadow-md transition-all">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" class="w-4 h-4" alt="G">
+                        Conectar Calendar
+                    </button>
+                `;
+                if (badge) badge.classList.add('hidden');
+            }
+        }
+
+        // ==========================================
+        // 2. RENDERIZADO DE AGENDA (CON DELETE UI)
+        // ==========================================
+        function renderAgenda() {
+            const list = document.getElementById('agenda-list'); if(!list) return;
+            const ag = JSON.parse(localStorage.getItem('agenda_db')) || [];
+            const myAg = ag.filter(a => a.fisio === window.currFisioUser || window.currFisioUser === 'admin');
+            
+            list.innerHTML = '';
+            if(myAg.length === 0) { list.innerHTML = '<div class="text-center py-6 bg-slate-50 rounded-xl border border-dashed border-slate-200"><p class="text-[10px] text-slate-400 italic">No hay citas programadas.</p></div>'; return; }
+
+            myAg.sort((a,b) => new Date(a.date) - new Date(b.date)).forEach(item => {
+                const pDb = JSON.parse(localStorage.getItem('p_db'));
+                const p = pDb[item.pKey];
+                const pName = p ? p.displayName : 'Paciente eliminado';
+                const dateObj = new Date(item.date);
+                
+                const isSynced = !!item.googleEventId;
+                const syncBadge = isSynced 
+                    ? `<span class="text-[9px] bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded font-bold border border-blue-200" title="Sincronizado con Google">G-Sync</span>` 
+                    : `<span class="text-[9px] bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded font-bold border border-slate-200">Local</span>`;
+
+                list.innerHTML += `
+                    <div class="flex justify-between items-center p-3 bg-white rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-all group">
+                        <div class="flex items-center gap-3">
+                            <div class="flex flex-col items-center justify-center w-10 h-10 bg-blue-50 rounded-lg text-blue-700 border border-blue-100">
+                                <span class="text-[8px] font-bold uppercase">${dateObj.toLocaleDateString('es-ES', {month:'short'})}</span>
+                                <span class="text-sm font-black leading-none">${dateObj.getDate()}</span>
+                            </div>
+                            <div>
+                                <p class="text-xs font-bold text-slate-800 flex items-center gap-2">${pName} ${syncBadge}</p>
+                                <p class="text-[10px] text-slate-500 font-medium mt-0.5">⏰ ${dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                            </div>
+                        </div>
+                        <button onclick="deleteAppointment(${item.id})" class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition-all active:scale-95" title="Eliminar Cita">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                        </button>
+                    </div>
+                `;
+            });
+        }
+
+        // ==========================================
+        // 3. LOGICA DE AGENDA (LOCAL + SYNC CORRECTO)
+        // ==========================================
+        async function processAppointment() {
+            const dateVal = document.getElementById('agenda-date').value;
+            const patKey = document.getElementById('agenda-patient-selector').value;
+
+            if(!window.currFisio) return showToast("Debes iniciar sesión como Fisio", "warn");
+            if(!dateVal || !patKey) return showToast("Faltan datos para la cita", "warn");
+            
+            const pDb = JSON.parse(localStorage.getItem('p_db'));
+            const pName = pDb[patKey] ? pDb[patKey].displayName : "Paciente";
+            const appointmentId = Date.now();
+            const newAppointment = { id: appointmentId, pKey: patKey, fisio: window.currFisioUser, date: dateVal, googleEventId: null };
+
+            // GUARDADO LOCAL INICIAL
+            try {
+                const ag = JSON.parse(localStorage.getItem('agenda_db')) || [];
+                ag.push(newAppointment);
+                localStorage.setItem('agenda_db', JSON.stringify(ag));
+                renderAgenda(); 
+                document.getElementById('agenda-date').value = "";
+            } catch(e) { return showToast("Error de almacenamiento local", "error"); }
+
+            // INTENTO DE SINCRONIZACIÓN GOOGLE
+            if (isEnvValid && gapi.client.getToken()) {
+                showToast("Sincronizando con Google...", "warn");
+                const start = new Date(dateVal); 
+                const end = new Date(start.getTime() + 60*60000); 
+
+                const event = { 
+                    'summary': `Fisio: ${pName}`, 
+                    'description': `Paciente: ${pName}\nProfesional: ${window.currFisio}\nID Vitalia: ${appointmentId}`, 
+                    'start': { 'dateTime': start.toISOString(), 'timeZone': Intl.DateTimeFormat().resolvedOptions().timeZone }, 
+                    'end': { 'dateTime': end.toISOString(), 'timeZone': Intl.DateTimeFormat().resolvedOptions().timeZone },
+                    'reminders': { 'useDefault': false, 'overrides': [ { 'method': 'popup', 'minutes': 30 } ] }
+                };
+
+                try {
+                    const request = gapi.client.calendar.events.insert({ 'calendarId': 'primary', 'resource': event });
+                    const response = await request;
+
+                    if(response.result.status === 'confirmed' || response.result.status === 'tentative') {
+                        const agUpdated = JSON.parse(localStorage.getItem('agenda_db')) || [];
+                        const targetIndex = agUpdated.findIndex(x => x.id === appointmentId);
+                        if(targetIndex !== -1) {
+                            agUpdated[targetIndex].googleEventId = response.result.id;
+                            localStorage.setItem('agenda_db', JSON.stringify(agUpdated));
+                            renderAgenda(); 
+                            showToast("Cita sincronizada en Google Calendar", "success");
+                        }
+                    }
+                } catch(e) { 
+                    console.error("Error Sync Google:", e);
+                    if (e.status === 401 || e.status === 403) showToast("Guardado local. Token Google expirado.", "warn");
+                    else showToast("Guardado local. Error de conexión Google.", "warn");
+                }
+            } else {
+                showToast("Cita guardada solo localmente", "success");
+            }
+        }
+
+        // ==========================================
+        // 4. ELIMINACIÓN DE CITAS (NUEVA FUNCIONALIDAD)
+        // ==========================================
+        async function deleteAppointment(appId) {
+            if(!confirm("¿Estás seguro de cancelar esta cita?")) return;
+
+            const ag = JSON.parse(localStorage.getItem('agenda_db')) || [];
+            const appointment = ag.find(a => a.id === appId);
+            if (!appointment) return showToast("Error: Cita no encontrada", "error");
+
+            if (appointment.googleEventId && isEnvValid && gapi.client.getToken()) {
+                try {
+                    await gapi.client.calendar.events.delete({ 'calendarId': 'primary', 'eventId': appointment.googleEventId });
+                    showToast("Evento eliminado de Google Calendar", "success");
+                } catch (e) {
+                    console.error("Error eliminando de Google:", e);
+                    if(e.status !== 410) showToast("No se pudo borrar de Google (Revisar conexión)", "warn");
+                }
+            }
+
+            const newAg = ag.filter(a => a.id !== appId);
+            localStorage.setItem('agenda_db', JSON.stringify(newAg));
+            renderAgenda();
+            showToast("Cita eliminada correctamente", "success");
+        }
+
+        // --- LOGICA GENERAL DE LA APP ---
+        const INIT_FISIOS = { "admin": { nombre: "Dr. Admin", pass: "admin" } };
+        if(!localStorage.getItem('f_db')) localStorage.setItem('f_db', JSON.stringify(INIT_FISIOS));
+        if(!localStorage.getItem('p_db')) localStorage.setItem('p_db', "{}");
+        if(!localStorage.getItem('logs')) localStorage.setItem('logs', "[]");
+        if(!localStorage.getItem('r_db')) localStorage.setItem('r_db', "{}");
+        if(!localStorage.getItem('agenda_db')) localStorage.setItem('agenda_db', "[]");
+
+        let trainingState = { mode: null, timeLeft: 0, rounds: 0, currentRound: 1, work: 0, rest: 0, isRunning: false, isPaused: false, interval: null, soundEnabled: true, phase: 'WORK', cogType: 'COLOR', speed: 3 };
+        const AUDIO_CTX = new (window.AudioContext || window.webkitAudioContext)();
+
+        function initApp() {
+            document.querySelectorAll('main > div').forEach(d => d.classList.add('hidden'));
+            const activeLab = document.getElementById('step-training-active');
+            if(activeLab) activeLab.classList.add('hidden');
+            updateFisioSelects(); 
+            // La inicialización de Google se maneja con el libCheckInterval
+            goTo('landing');
+        }
+
+        function resetSensitiveUI() {
+            const sensitiveIds = ['f-user', 'f-pass', 'new-f-name', 'new-f-user', 'new-f-pass', 'pName', 'pAge', 'pSexo', 'pMotivo', 'pFisio', 'pFechaPeriodo', 'ext-nombre', 'ext-obs', 'ext-patient-manual', 'ext-foto-input', 'in-dolor', 'in-sueno', 'in-desc', 'in-rpe', 'in-min', 'in-periodo-update'];
+            sensitiveIds.forEach(id => { const el = document.getElementById(id); if(el) el.value = ""; });
+            if(document.getElementById('upload-preview-grid')) { document.getElementById('upload-preview-grid').innerHTML = ""; document.getElementById('upload-preview-grid').classList.add('hidden'); }
+            pendingFiles = [];
+            if(document.getElementById('box-periodo')) document.getElementById('box-periodo').classList.add('hidden');
+            if(document.getElementById('fisio-reg-form')) document.getElementById('fisio-reg-form').classList.add('hidden');
+            updatePain(0);
+        }
+
+        function goTo(id) {
+            if (id === 'landing' || id === 'fisio-login' || id === 'id') { resetSensitiveUI(); }
+            document.querySelectorAll('main > div').forEach(d => d.classList.add('hidden'));
+            const activeLab = document.getElementById('step-training-active'); if(activeLab) activeLab.classList.add('hidden');
+            clearInterval(trainingState.interval); trainingState.isRunning = false;
+            
+            const t = document.getElementById('step-' + id); if(t) t.classList.remove('hidden');
+            const isFisio = (id === 'fisio-dash' || id === 'externo' || id === 'training-results');
+            document.getElementById('btn-logout').classList.toggle('hidden', !isFisio && !id.startsWith('training'));
+            document.getElementById('btn-fisio-access').classList.toggle('hidden', isFisio || id === 'fisio-login' || id === 'landing' || id.startsWith('training'));
+            window.scrollTo(0,0);
+            if(id === 'fisio-dash') { updatePatientSelector(); updateRoutineSelector(); updateAgendaSelector(); renderAgenda(); checkTokenValidity(); }
+            if(id === 'diario') checkCycleUpdate();
+        }
+
+        function showToast(msg, type = 'success') {
+            const c = document.getElementById('toast-container'); const t = document.createElement('div');
+            t.className = `toast ${type==='error'?'toast-error':(type==='warn'?'toast-warn':'toast-success')}`;
+            t.innerHTML = `<span>${type==='error'?'✕':(type==='warn'?'⚠️':'✓')}</span> <span>${msg}</span>`;
+            c.appendChild(t); requestAnimationFrame(() => t.classList.add('show'));
+            setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 400); }, 3000);
+        }
+
+        // --- PATIENT ---
+        function autoFill(n) { const k = n.trim().toLowerCase(); const db = JSON.parse(localStorage.getItem('p_db')); const p = db[k]; if(p) { document.getElementById('pAge').value=p.edad; document.getElementById('pSexo').value=p.sexo; document.getElementById('pFisio').value=p.fisio; document.getElementById('pMotivo').value=p.motivo||""; logicPeriodo(); } }
+        function logicPeriodo() { const s=document.getElementById('pSexo').value; const e=parseInt(document.getElementById('pAge').value); const box=document.getElementById('box-periodo'); const hasData = localStorage.getItem('last_period_' + document.getElementById('pName').value.trim().toLowerCase()); if(s==='Femenino' && e>=12 && e<=55 && !hasData) box.classList.remove('hidden'); else box.classList.add('hidden'); }
+        function checkCycleUpdate() { const k = sessionStorage.getItem('current_patient'); if(!k) return; const p = JSON.parse(localStorage.getItem('p_db'))[k]; const box = document.getElementById('box-periodo-update'); document.getElementById('in-periodo-update').value=""; box.classList.add('hidden'); if(p && p.sexo==='Femenino' && p.edad>=12 && p.edad<=55) { const last = localStorage.getItem('last_period_'+k); if(last) { if(Math.ceil(Math.abs(new Date()-new Date(last))/(86400000)) >= 28) box.classList.remove('hidden'); } else box.classList.remove('hidden'); } }
+        function acceder() { const n=document.getElementById('pName').value.trim(); const f=document.getElementById('pFisio').value; if(!n || !f) return showToast("Completa los campos", "warn"); const k = n.toLowerCase(); const db = JSON.parse(localStorage.getItem('p_db')); db[k] = { edad: document.getElementById('pAge').value, sexo: document.getElementById('pSexo').value, fisio: f, displayName: n, motivo: document.getElementById('pMotivo').value }; localStorage.setItem('p_db', JSON.stringify(db)); if(!document.getElementById('box-periodo').classList.contains('hidden')) { const fp=document.getElementById('pFechaPeriodo').value; if(fp) localStorage.setItem('last_period_'+k, fp); } sessionStorage.setItem('current_patient', k); goTo('menu'); }
+        function logoutPatient(){ sessionStorage.removeItem('current_patient'); resetSensitiveUI(); goTo('landing'); }
+
+        // --- VISUAL FEEDBACK & SCALES ---
+        function updatePain(v) { document.getElementById('v-dolor').innerText = v; const t = document.getElementById('dolor-txt'); const labels = ["Sin dolor", "Mínimo", "Leve", "Tolerable", "Incómodo", "Moderado", "Intenso", "Muy Intenso", "Severo", "Incapacitante", "Urgencia"]; const colors = ["text-teal-600 bg-teal-50", "text-teal-600 bg-teal-50", "text-lime-600 bg-lime-50", "text-lime-600 bg-lime-50", "text-yellow-600 bg-yellow-50", "text-amber-600 bg-amber-50", "text-orange-600 bg-orange-50", "text-orange-600 bg-orange-50", "text-red-600 bg-red-50", "text-rose-700 bg-rose-100", "text-rose-900 bg-rose-200"]; t.innerText = labels[v]; t.className = `text-sm font-bold mt-4 text-center transition-colors py-2 rounded-lg ${colors[v]}`; }
+        function updateSleep(v) { document.getElementById('v-sueno').innerText = v+"/10"; const t = document.getElementById('sueno-txt'); const labels = ["", "Pésimo / Insomnio", "Muy Malo", "Malo", "Insuficiente", "Regular", "Aceptable", "Bueno", "Muy Bueno", "Excelente", "Restaurador Total"]; const colors = ["", "text-rose-600", "text-rose-500", "text-orange-500", "text-orange-400", "text-yellow-600", "text-teal-500", "text-teal-600", "text-indigo-500", "text-indigo-600", "text-violet-600"]; if(v >= 1 && v <= 10) { t.innerText = labels[v]; t.className = `text-xs font-bold text-center mt-2 transition-colors ${colors[v]}`; } }
+        function updateRest(v) { document.getElementById('v-desc').innerText = v+"/10"; const t = document.getElementById('desc-txt'); const labels = ["", "Agotado / Sin Energía", "Muy Fatigado", "Fatigado", "Cansado", "Energía Baja", "Energía Media", "Recuperado", "Bien Recuperado", "Muy Fresco", "Energía Máxima"]; const colors = ["", "text-rose-600", "text-rose-500", "text-orange-500", "text-orange-400", "text-yellow-600", "text-blue-500", "text-blue-600", "text-emerald-500", "text-emerald-600", "text-emerald-700"]; if(v >= 1 && v <= 10) { t.innerText = labels[v]; t.className = `text-xs font-bold text-center mt-2 transition-colors ${colors[v]}`; } }
+        function updateRPE(v) { document.getElementById('v-rpe').innerText = v; document.getElementById('rpe-lbl').innerText = ["Reposo", "Muy Suave", "Suave", "Ligero", "Moderado", "Algo Duro", "Duro", "Muy Duro", "Extremo", "Casi Máximo", "Fallo"][v]; }
+
+        window.isiData = {};
+        function renderISI() { const qs = ["Dificultad conciliar", "Dificultad mantener", "Despertar temprano", "Satisfacción patrón", "Interferencia diaria", "Notabilidad entorno", "Preocupación"]; const lbs = ["Ninguna", "Leve", "Moderada", "Severa", "Muy Severa"]; const t = document.getElementById('isi-box'); t.innerHTML = ""; qs.forEach((q, i) => { let h = `<div class="border-b border-slate-50 pb-6"><p class="font-bold text-sm text-slate-700 mb-4">${i+1}. ${q}</p><div class="grid grid-cols-5 gap-2">`; for(let v=0; v<=4; v++) { h += `<button onclick="setISI(${i},${v},this)" class="isi-btn-${i} bg-slate-50 border border-slate-100 rounded-xl py-3 flex flex-col items-center justify-center gap-1 text-slate-400 hover:bg-white hover:shadow-md hover:border-teal-100 transition-all"><span class="text-lg font-black">${v}</span><span class="text-[8px] uppercase font-bold tracking-tight">${lbs[v]}</span></button>`; } t.innerHTML += h + `</div></div>`; }); }
+        function setISI(q, v, b) { window.isiData[q] = v; document.querySelectorAll(`.isi-btn-${q}`).forEach(e => { e.classList.remove('bg-slate-800', 'text-white', 'border-slate-800'); e.classList.add('bg-slate-50', 'text-slate-400'); }); b.classList.remove('bg-slate-50', 'text-slate-400'); b.classList.add('bg-slate-800', 'text-white', 'border-slate-800'); }
+
+        // --- FISIO ---
+        function updateFisioSelects() { const db = JSON.parse(localStorage.getItem('f_db')); ['pFisio', 'f-user'].forEach(id => { const s = document.getElementById(id); if(s){ s.innerHTML='<option value="">Seleccionar...</option>'; for(let k in db) s.innerHTML+=`<option value="${k}">${db[k].nombre}</option>`; } }); }
+        function loginFisio() { const u=document.getElementById('f-user').value, p=document.getElementById('f-pass').value; const db=JSON.parse(localStorage.getItem('f_db')); if(db[u] && db[u].pass===p) { window.currFisio=db[u].nombre; window.currFisioUser=u; document.getElementById('fisio-name').innerText=window.currFisio; goTo('fisio-dash'); } else showToast("Credenciales inválidas", "error"); }
+        function logoutFisio() { if(confirm("¿Salir?")) { window.currFisio=null; resetSensitiveUI(); goTo('landing'); } }
+        function toggleFisioForms() { document.getElementById('fisio-reg-form').classList.toggle('hidden'); }
+        function registerFisio() { const n=document.getElementById('new-f-name').value, u=document.getElementById('new-f-user').value, p=document.getElementById('new-f-pass').value; if(!n||!u||!p) return; const db=JSON.parse(localStorage.getItem('f_db')); db[u]={nombre:n, pass:p}; localStorage.setItem('f_db',JSON.stringify(db)); updateFisioSelects(); toggleFisioForms(); showToast("Usuario creado", "success"); }
+
+        // --- DASHBOARD ---
+        function switchDashTab(t) { ['analisis','rutinas','pacientes'].forEach(x=>{ document.getElementById('tab-content-'+x).classList.add('hidden'); const b=document.getElementById('tab-btn-'+x); b.classList.remove('bg-slate-900','text-white','shadow-md'); b.classList.add('text-slate-500'); }); document.getElementById('tab-content-'+t).classList.remove('hidden'); const a=document.getElementById('tab-btn-'+t); a.classList.add('bg-slate-900','text-white','shadow-md'); a.classList.remove('text-slate-500'); if(t==='pacientes') updateAgendaSelector(); }
+        window.currentPatientKey=null; window.chartRange='all';
+        function updatePatientSelector() { const db=JSON.parse(localStorage.getItem('p_db')); const s=document.getElementById('analisis-paciente-selector'); s.innerHTML='<option value="">Seleccionar Paciente...</option>'; for(let k in db) if(db[k].fisio===window.currFisioUser || window.currFisioUser==='admin') s.innerHTML+=`<option value="${k}">${db[k].displayName}</option>`; }
+        function updateRoutineSelector() { const db = JSON.parse(localStorage.getItem('p_db')); const s = document.getElementById('prog-p-selector'); if(!s) return; s.innerHTML = '<option value="">Seleccionar...</option>'; for(let k in db) { if(db[k].fisio === window.currFisioUser || window.currFisioUser === 'admin') { s.innerHTML += `<option value="${k}">${db[k].displayName}</option>`; } } }
+        function updateAgendaSelector() { const db = JSON.parse(localStorage.getItem('p_db')); const s = document.getElementById('agenda-patient-selector'); if(!s) return; s.innerHTML = ''; for(let k in db) { if(db[k].fisio === window.currFisioUser || window.currFisioUser === 'admin') { s.innerHTML += `<option value="${k}">${db[k].displayName}</option>`; } } }
+
+        function renderAnalisis(k) { window.currentPatientKey=k; const c=document.getElementById('chart-container'), n=document.getElementById('no-data-msg'), i=document.getElementById('patient-info-mini'); if(!k) { c.classList.add('hidden'); n.classList.remove('hidden'); i.classList.add('hidden'); return; } n.classList.add('hidden'); c.classList.remove('hidden'); i.classList.remove('hidden'); document.getElementById('display-motivo-fisio').innerText = JSON.parse(localStorage.getItem('p_db'))[k].motivo || "Sin motivo"; drawChartSvg('trend-chart'); renderGallery(k); }
+
+        // --- CHART & GALLERY ---
+        function drawChartSvg(cid) { const svg=document.getElementById(cid); svg.innerHTML=""; const logs=JSON.parse(localStorage.getItem('logs')).filter(l=>l.paciente===window.currentPatientKey && l.tipo==='DIARIO').sort((a,b)=>new Date(a.fecha)-new Date(b.fecha)); if(logs.length===0) { svg.innerHTML=`<text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#cbd5e1" font-size="12" font-weight="bold">SIN DATOS AÚN</text>`; return; } const w=300, h=150, pX=30, pY=20; svg.setAttribute('viewBox', `0 0 ${w} ${h}`); for(let i=0; i<=10; i+=2) { const y=(h-pY)-(i*((h-pY*2)/10)); svg.innerHTML+=`<line x1="${pX}" y1="${y}" x2="${w}" y2="${y}" stroke="#f1f5f9" stroke-width="1"/><text x="${pX-6}" y="${y+3}" class="chart-axis-text" text-anchor="end">${i}</text>`; } const step=(w-pX-10)/(logs.length>1?logs.length-1:1); let dD="", dE="", dR="", pts=""; logs.forEach((d,i) => { const x=pX+(i*step); const dol=parseInt((d.d3.match(/\d+/)||0)[0]), esf=parseInt((d.d2.match(/\d+/)||0)[0]), rec=parseInt((d.d1.split('|')[1].match(/\d+/)||0)[0]); const gy=v=>(h-pY)-(v*((h-pY*2)/10)); dD+=`${x},${gy(dol)} `; dE+=`${x},${gy(esf)} `; dR+=`${x},${gy(rec)} `; pts+=`<circle cx="${x}" cy="${gy(dol)}" r="3" fill="#f43f5e" stroke="white" stroke-width="1.5"/>`; }); const pl=(p,c,da)=>`<polyline points="${p}" fill="none" stroke="${c}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="${da||0}"/>`; svg.innerHTML+=pl(dD,'#f43f5e')+pl(dE,'#d97706')+pl(dR,'#0ea5e9','4,3')+pts; }
+        function setChartRange(d) { window.chartRange=d; document.querySelectorAll('.btn-range').forEach(b=>{b.classList.remove('bg-white','shadow-sm','text-slate-800'); b.classList.add('text-slate-400');}); document.getElementById('btn-r-'+d).classList.add('bg-white','shadow-sm','text-slate-800'); document.getElementById('btn-r-'+d).classList.remove('text-slate-400'); drawChartSvg('trend-chart'); if(document.getElementById('modal-chart-overlay').classList.contains('active')) drawChartSvg('chart-fullscreen-svg'); }
+        function openChartModal() { if(window.currentPatientKey) { document.getElementById('modal-chart-overlay').classList.add('active'); setTimeout(()=>drawChartSvg('chart-fullscreen-svg'),100); } }
+        function closeChartModal() { document.getElementById('modal-chart-overlay').classList.remove('active'); }
+
+        let pendingFiles = [];
+        function prepararTestClinico() { const s=document.getElementById('analisis-paciente-selector'); if(s.value) { document.getElementById('box-fisio-patient-select').classList.remove('hidden'); document.getElementById('ext-patient-manual').value=s.options[s.selectedIndex].text; } pendingFiles = []; document.getElementById('upload-preview-grid').innerHTML = ""; goTo('externo'); }
+        function procesarArchivos(input) { if (input.files) { Array.from(input.files).forEach(file => { const reader = new FileReader(); reader.onload = (e) => { const isVideo = file.type.startsWith('video'); const url = e.target.result; pendingFiles.push({ type: isVideo ? 'video' : 'image', data: url }); renderUploadPreview(); }; reader.readAsDataURL(file); }); } }
+        function removePendingFile(index, event) { event.stopPropagation(); pendingFiles.splice(index, 1); renderUploadPreview(); }
+        function renderUploadPreview() { const grid = document.getElementById('upload-preview-grid'); grid.innerHTML = ""; if(pendingFiles.length === 0) { grid.classList.add('hidden'); return; } grid.classList.remove('hidden'); pendingFiles.forEach((file, index) => { const div = document.createElement('div'); div.className = "media-grid-item bg-slate-100 rounded-lg overflow-hidden relative aspect-square shadow-sm group"; let contentHTML = ''; if(file.type === 'video') { contentHTML = `<video src="${file.data}" class="w-full h-full object-cover opacity-80"></video><div class="absolute inset-0 flex items-center justify-center text-white text-2xl font-bold">▶</div>`; } else { contentHTML = `<img src="${file.data}" class="w-full h-full object-cover">`; } const deleteBtn = `<button onclick="removePendingFile(${index}, event)" class="absolute top-1 right-1 bg-rose-500 text-white rounded-full w-6 h-6 flex items-center justify-center font-bold shadow-md z-20 hover:scale-110 transition-transform">✕</button>`; div.innerHTML = contentHTML + deleteBtn; grid.appendChild(div); }); }
+        function renderGallery(key) { const gal = document.getElementById('analisis-gallery'); gal.innerHTML = ""; const rawLogs = JSON.parse(localStorage.getItem('logs')); let hasData = false; rawLogs.forEach((log, logIndex) => { if(log.paciente === key && log.tipo === 'EXTERNO') { hasData = true; let items = []; if (log.adjuntos && Array.isArray(log.adjuntos)) { items = log.adjuntos.map((item, i) => ({ ...item, index: i })); } else if (log.imagen) { items = [{ type: 'image', data: log.imagen, index: -1 }]; } items.forEach(item => { const el = document.createElement('div'); el.className = "media-grid-item bg-slate-50 relative aspect-square rounded-xl overflow-hidden shadow-sm border border-slate-200 group"; el.onclick = () => openMediaModal(item.type, item.data, `${log.d1} - ${log.fecha}`); let contentHTML = ''; if(item.type === 'video') { contentHTML = `<video src="${item.data}" class="w-full h-full object-cover"></video><div class="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors flex items-center justify-center text-white text-3xl">▶</div>`; } else { contentHTML = `<img src="${item.data}" class="w-full h-full object-cover transition-transform group-hover:scale-110">`; } const deleteBtn = `<button onclick="event.stopPropagation(); deleteSavedMedia(${logIndex}, ${item.index})" class="absolute top-1 right-1 bg-rose-500 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold shadow-md z-20 hover:bg-rose-600 transition-colors">🗑️</button>`; el.innerHTML = contentHTML + deleteBtn; gal.appendChild(el); }); } }); if(!hasData) { gal.innerHTML = '<p class="text-xs text-slate-400 col-span-3 text-center italic mt-2">No hay evidencia visual registrada.</p>'; } }
+        function deleteSavedMedia(logIndex, itemIndex) { if(!confirm("¿Eliminar esta evidencia permanentemente?")) return; const db = JSON.parse(localStorage.getItem('logs')); const log = db[logIndex]; if (!log) return; if (itemIndex === -1) { delete log.imagen; } else if (log.adjuntos && log.adjuntos[itemIndex]) { log.adjuntos.splice(itemIndex, 1); } localStorage.setItem('logs', JSON.stringify(db)); renderGallery(window.currentPatientKey); showToast("Evidencia eliminada", "success"); }
+        function openMediaModal(type, src, caption) { const ov = document.getElementById('modal-media-overlay'); const box = document.getElementById('media-content-box'); document.getElementById('media-caption').innerText = caption; if(type === 'video') box.innerHTML = `<video src="${src}" controls autoplay class="max-w-full max-h-[80vh]"></video>`; else box.innerHTML = `<img src="${src}" class="max-w-full max-h-[80vh] object-contain">`; ov.classList.add('active'); }
+        function closeMediaModal(e, force) { if(force || e.target.id === 'modal-media-overlay') { document.getElementById('modal-media-overlay').classList.remove('active'); document.getElementById('media-content-box').innerHTML = ""; } }
+
+        function finalizar(tipo) {
+            let n = document.getElementById('pName').value.trim();
+            let pKey = sessionStorage.getItem('current_patient');
+            const fisio = document.getElementById('pFisio').value || window.currFisioUser;
+            const fecha = new Date().toLocaleString('es-ES');
+            let d1="", d2="", d3="", adjuntos = [];
+
+            if(tipo === 'DIARIO') {
+                d1 = `Sueño: ${document.getElementById('in-sueno').value} | Recup: ${document.getElementById('in-desc').value}`;
+                d2 = `Esfuerzo: ${document.getElementById('in-rpe').value} (${document.getElementById('in-min').value||0}min)`;
+                d3 = `Dolor: ${document.getElementById('in-dolor').value}`;
+                const np = document.getElementById('in-periodo-update').value; if(np) localStorage.setItem('last_period_'+pKey, np);
+                n = pKey;
+            } else if (tipo === 'ISI') {
+                let t=0, c=0; for(let k in window.isiData){t+=window.isiData[k];c++}
+                if(c<7) return showToast("Responde todo el test", "warn");
+                d1=`Total: ${t}`; d2=`Nivel: ${t>=15?'Severo':(t>=8?'Subclínico':'Normal')}`; d3="ISI TEST";
+                n = pKey;
+            } else if (tipo === 'EXTERNO') {
+                const s = document.getElementById('analisis-paciente-selector');
+                n = (s && s.value) ? s.value : document.getElementById('ext-patient-manual').value;
+                if(s && s.value) n = s.value;
+                d1 = document.getElementById('ext-nombre').value; d2 = document.getElementById('ext-obs').value; d3 = "Hallazgo";
+                adjuntos = [...pendingFiles];
+                if(!d1) return showToast("Falta nombre de la prueba", "warn");
+            }
+
+            const logs = JSON.parse(localStorage.getItem('logs'));
+            logs.push({ fecha, fisio, paciente: n.toLowerCase(), tipo, d1, d2, d3, adjuntos: adjuntos });
+            localStorage.setItem('logs', JSON.stringify(logs));
+            showToast("Guardado Exitosamente", "success");
+            resetSensitiveUI(); goTo(window.currFisio ? 'fisio-dash' : 'menu');
+        }
+
+        function deletePatient() { if(!window.currentPatientKey) return showToast("Seleccione paciente", "warn"); if(confirm("¿Eliminar expediente permanentemente?")) { const db=JSON.parse(localStorage.getItem('p_db')); delete db[window.currentPatientKey]; localStorage.setItem('p_db', JSON.stringify(db)); window.currentPatientKey=null; updatePatientSelector(); renderAnalisis(""); showToast("Expediente eliminado", "success"); } }
+        function exportMyData() { const k = document.getElementById('analisis-paciente-selector').value; if(!k) return showToast("Seleccione paciente", "warn"); const logs = JSON.parse(localStorage.getItem('logs')).filter(l=>l.paciente === k); let csv = "data:text/csv;charset=utf-8,Fecha;Tipo;D1;D2;D3\n"; logs.forEach(l => csv += `${l.fecha};${l.tipo};${l.d1};${l.d2};${l.d3}\n`); const link = document.createElement("a"); link.href = encodeURI(csv); link.download = `Vitalia_${k}.csv`; document.body.appendChild(link); link.click(); document.body.removeChild(link); }
+        function saveRoutine() { const p = document.getElementById('prog-p-selector').value; if(!p) return showToast("Falta paciente", "warn"); const db = JSON.parse(localStorage.getItem('r_db')); db[p] = { txt: document.getElementById('prog-text').value, lT: document.getElementById('prog-link-name').value, lU: document.getElementById('prog-link-url').value, date: new Date().toLocaleDateString() }; localStorage.setItem('r_db', JSON.stringify(db)); showToast("Pauta Enviada", "success"); document.getElementById('prog-text').value=""; document.getElementById('prog-link-name').value=""; document.getElementById('prog-link-url').value=""; }
+        function loadRoutine() { const p = sessionStorage.getItem('current_patient'); const d = JSON.parse(localStorage.getItem('r_db'))[p]; const v = document.getElementById('prog-view'), fb = document.getElementById('prog-file-box'); if(d) { v.innerText = `📅 ${d.date}\n\n${d.txt}`; if(d.lU) { fb.classList.remove('hidden'); fb.setAttribute('onclick', `window.open('${d.lU}')`); document.getElementById('prog-file-name').innerText=d.lT||"Ver Recurso"; } else fb.classList.add('hidden'); } else { v.innerText = "No tienes pautas activas."; fb.classList.add('hidden'); } }
+
+        // --- ACTIVE LAB ---
+        function toggleSound() { trainingState.soundEnabled = !trainingState.soundEnabled; document.getElementById('btn-sound').innerText = trainingState.soundEnabled ? '🔊' : '🔇'; }
+        function playBeep(type) { if (!trainingState.soundEnabled) return; if (AUDIO_CTX.state === 'suspended') AUDIO_CTX.resume(); const osc = AUDIO_CTX.createOscillator(); const gain = AUDIO_CTX.createGain(); osc.connect(gain); gain.connect(AUDIO_CTX.destination); if (type === 'GO') { osc.frequency.value = 880; osc.type = 'sine'; } else if (type === 'COUNT') { osc.frequency.value = 440; } else if (type === 'REST') { osc.frequency.value = 220; osc.type = 'triangle'; } gain.gain.setValueAtTime(0.1, AUDIO_CTX.currentTime); osc.start(); osc.stop(AUDIO_CTX.currentTime + (type==='GO'?0.6: (type==='REST'?0.4:0.1))); }
+        function setupTraining(mode) { trainingState.mode = mode; goTo('training-setup'); const c = document.getElementById('training-inputs-container'); const title = document.getElementById('setup-title'); const desc = document.getElementById('setup-desc'); title.innerText = mode; if (mode === 'AMRAP') { desc.innerText = "As Many Rounds As Possible"; c.innerHTML = `<div><label class="text-[10px] font-bold text-slate-400 uppercase block mb-3">Tiempo Total (Min)</label><input type="number" id="in-time" class="input-time" value="10"></div>`; } else if (mode === 'EMOM') { desc.innerText = "Every Minute on the Minute"; c.innerHTML = `<div><label class="text-[10px] font-bold text-slate-400 uppercase block mb-3">Minutos Totales</label><input type="number" id="in-rounds" class="input-time" value="10"></div><div class="pt-6"><label class="text-[10px] font-bold text-slate-400 uppercase block mb-3">Intervalo (Seg)</label><input type="number" id="in-interval" class="input-time text-slate-400 text-3xl" value="60"></div>`; } else if (mode === 'TABATA') { desc.innerText = "Alta Intensidad"; c.innerHTML = `<div class="grid grid-cols-2 gap-8"><div><label class="text-[10px] font-bold text-teal-600 uppercase block mb-3">Trabajo (s)</label><input type="number" id="in-work" class="input-time text-teal-600 border-teal-200" value="20"></div><div><label class="text-[10px] font-bold text-rose-500 uppercase block mb-3">Descanso (s)</label><input type="number" id="in-rest" class="input-time text-rose-500 border-rose-200" value="10"></div></div><div class="mt-8"><label class="text-[10px] font-bold text-slate-400 uppercase block mb-3">Rondas</label><input type="number" id="in-rounds" class="input-time text-3xl" value="8"></div>`; } else if (mode === 'COGNITIVO') { desc.innerText = "Entrenamiento Neurocognitivo"; c.innerHTML = `<div><label class="text-[10px] font-bold text-slate-400 uppercase block mb-3">Duración (Min)</label><input type="number" id="in-time" class="input-time" value="3"></div><div class="mt-6"><label class="text-[10px] font-bold text-slate-400 uppercase block mb-3">Velocidad (Seg)</label><input type="number" id="in-speed" class="input-time text-slate-400 text-3xl" value="3"></div><div class="mt-6"><label class="text-[10px] font-bold text-slate-400 uppercase block mb-3">Estímulo</label><select id="in-cog-type" class="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold text-lg outline-none"><option value="COLOR">Colores</option><option value="NUMBER">Números</option><option value="DIR">Flechas</option></select></div>`; } }
+        function startTraining() { if (trainingState.mode === 'AMRAP') { trainingState.timeLeft = (parseInt(document.getElementById('in-time').value)||10)*60; trainingState.configTime = trainingState.timeLeft; } else if (trainingState.mode === 'EMOM') { trainingState.rounds = parseInt(document.getElementById('in-rounds').value)||10; trainingState.work = parseInt(document.getElementById('in-interval').value)||60; trainingState.timeLeft = trainingState.work; trainingState.currentRound = 1; } else if (trainingState.mode === 'TABATA') { trainingState.work = parseInt(document.getElementById('in-work').value)||20; trainingState.rest = parseInt(document.getElementById('in-rest').value)||10; trainingState.rounds = parseInt(document.getElementById('in-rounds').value)||8; trainingState.timeLeft = 10; trainingState.phase = 'PREP'; trainingState.currentRound = 1; } else if (trainingState.mode === 'COGNITIVO') { trainingState.timeLeft = (parseInt(document.getElementById('in-time').value)||3)*60; trainingState.speed = parseInt(document.getElementById('in-speed').value)||3; trainingState.cogType = document.getElementById('in-cog-type').value; } document.getElementById('step-training-active').classList.remove('hidden'); document.getElementById('active-mode-label').innerText = trainingState.mode; document.getElementById('btn-pause').innerText = '⏸'; const cog = document.getElementById('cognitive-display'); const timer = document.getElementById('timer-display'); const cnt = document.getElementById('round-counter'); cog.classList.add('hidden'); timer.classList.remove('hidden', 'text-4xl'); timer.classList.add('text-[7rem]','sm:text-[9rem]'); cnt.classList.add('hidden'); updateScreenColor('white'); if (trainingState.mode === 'COGNITIVO') { cog.classList.remove('hidden'); timer.classList.replace('text-[7rem]','text-4xl'); timer.classList.replace('sm:text-[9rem]','text-4xl'); playBeep('GO'); } if (trainingState.mode === 'TABATA' || trainingState.mode === 'EMOM') { cnt.classList.remove('hidden'); updateRoundDisplay(); } trainingState.isRunning = true; trainingState.isPaused = false; clearInterval(trainingState.interval); trainingState.interval = setInterval(gameLoop, 1000); gameLoop(); }
+        function gameLoop() { if (trainingState.isPaused || !trainingState.isRunning) return; const m = Math.floor(trainingState.timeLeft / 60); const s = trainingState.timeLeft % 60; document.getElementById('timer-display').innerText = `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`; if (trainingState.mode === 'AMRAP') { if (trainingState.timeLeft<=5 && trainingState.timeLeft>0) playBeep('COUNT'); if (trainingState.timeLeft<=0) return finishTraining(); trainingState.timeLeft--; } else if (trainingState.mode === 'EMOM') { if (trainingState.timeLeft===0) { if (trainingState.currentRound >= trainingState.rounds) return finishTraining(); trainingState.currentRound++; trainingState.timeLeft = trainingState.work; playBeep('GO'); updateRoundDisplay(); flashScreen('green'); } else { if (trainingState.timeLeft<=3) playBeep('COUNT'); trainingState.timeLeft--; } } else if (trainingState.mode === 'TABATA') { if (trainingState.timeLeft===0) switchPhaseTabata(); else { if (trainingState.timeLeft<=3) playBeep('COUNT'); trainingState.timeLeft--; } } else if (trainingState.mode === 'COGNITIVO') { if (trainingState.timeLeft<=0) return finishTraining(); const total = (parseInt(document.getElementById('in-time').value)*60); if ((total - trainingState.timeLeft) % trainingState.speed === 0) triggerCognitive(); trainingState.timeLeft--; } }
+        function switchPhaseTabata() { if (trainingState.phase === 'PREP' || trainingState.phase === 'REST') { if (trainingState.phase === 'REST') { if (trainingState.currentRound >= trainingState.rounds) return finishTraining(); trainingState.currentRound++; updateRoundDisplay(); } trainingState.phase = 'WORK'; trainingState.timeLeft = trainingState.work; updateScreenColor('green'); document.getElementById('status-label').innerText = "¡TRABAJO!"; playBeep('GO'); } else { trainingState.phase = 'REST'; trainingState.timeLeft = trainingState.rest; updateScreenColor('red'); document.getElementById('status-label').innerText = "DESCANSO"; playBeep('REST'); } }
+        function triggerCognitive() { const d = document.getElementById('cognitive-display'); const types = ['bg-rose-500', 'bg-teal-500', 'bg-amber-500', 'bg-slate-900', 'bg-emerald-500']; d.className = "w-72 h-72 mt-8 flex items-center justify-center rounded-[3rem] text-9xl font-black shadow-2xl transition-all duration-200 border-8 border-white/10"; playBeep('GO'); if (trainingState.cogType === 'COLOR') { d.classList.add(types[Math.floor(Math.random()*types.length)]); d.innerText = ""; } else if (trainingState.cogType === 'NUMBER') { d.classList.add('bg-white', 'text-slate-900'); d.innerText = Math.floor(Math.random()*9)+1; } else { d.classList.add('bg-slate-900', 'text-white'); d.innerText = ['⬅','➡','⬆','⬇'][Math.floor(Math.random()*4)]; } d.style.transform = "scale(1.1)"; setTimeout(()=>d.style.transform="scale(1)", 150); }
+        function updateScreenColor(c) { const b = document.getElementById('step-training-active'); const t = document.getElementById('timer-display'); const s = document.getElementById('status-label'); const btn = document.getElementById('btn-pause'); b.className = "fullscreen-active transition-colors duration-500"; if (c === 'green') { b.classList.add('bg-teal-500'); t.classList.replace('text-brand-dark','text-white'); s.classList.replace('text-slate-400','text-teal-100'); btn.classList.replace('bg-brand-dark','bg-white'); btn.classList.replace('text-white','text-teal-600'); } else if (c === 'red') { b.classList.add('bg-rose-500'); t.classList.replace('text-brand-dark','text-white'); s.classList.replace('text-slate-400','text-rose-100'); btn.classList.replace('bg-brand-dark','bg-white'); btn.classList.replace('text-white','text-rose-600'); } else { b.classList.add('bg-white'); t.classList.replace('text-white','text-brand-dark'); s.classList.replace('text-teal-100','text-slate-400'); s.classList.replace('text-rose-100','text-slate-400'); btn.classList.replace('bg-white','bg-brand-dark'); btn.classList.replace('text-teal-600','text-white'); btn.classList.replace('text-rose-600','text-white'); } }
+        function updateRoundDisplay() { document.getElementById('round-counter').innerText = `Ronda ${trainingState.currentRound}/${trainingState.rounds}`; }
+        function flashScreen(c) { const el=document.getElementById('step-training-active'); const prev=el.className; if(c==='green') el.classList.add('bg-green-100'); setTimeout(()=>el.className=prev, 300); }
+        function togglePause() { trainingState.isPaused = !trainingState.isPaused; document.getElementById('btn-pause').innerText = trainingState.isPaused ? '▶' : '⏸'; document.getElementById('status-label').innerText = trainingState.isPaused ? 'PAUSADO' : 'EN CURSO'; }
+        function stopTraining() { clearInterval(trainingState.interval); trainingState.isRunning = false; goTo('training-menu'); }
+        function finishTraining() { clearInterval(trainingState.interval); playBeep('GO'); playBeep('GO'); goTo('training-results'); const sel = document.getElementById('res-patient'); const db = JSON.parse(localStorage.getItem('p_db')); sel.innerHTML = '<option value="">-- Sin Paciente --</option>'; for (let k in db) if(db[k].fisio === window.currFisioUser || window.currFisioUser === 'admin') sel.innerHTML += `<option value="${k}">${db[k].displayName}</option>`; document.getElementById('res-mode-display').innerText = `SESIÓN: ${trainingState.mode}`; const cont = document.getElementById('res-metric-container'); if(trainingState.mode === 'AMRAP') { cont.innerHTML = `<label class="block text-[10px] font-bold text-slate-400 uppercase mb-2">Rondas / Reps</label><input type="number" id="res-score" class="w-full p-4 bg-slate-50 rounded-xl border-none font-black text-2xl outline-none" placeholder="0">`; } else if (trainingState.mode === 'COGNITIVO') { cont.innerHTML = `<div class="grid grid-cols-2 gap-4"><div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-2">Aciertos</label><input type="number" id="res-score" class="w-full p-4 bg-teal-50 text-teal-900 rounded-xl border-none font-black text-2xl outline-none" placeholder="0"></div><div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-2">Errores</label><input type="number" id="res-mistakes" class="w-full p-4 bg-rose-50 text-rose-900 rounded-xl border-none font-black text-2xl outline-none" placeholder="0"></div></div>`; } else { cont.innerHTML = `<label class="block text-[10px] font-bold text-slate-400 uppercase mb-2">Feedback Rendimiento</label><textarea id="res-score" rows="3" class="w-full p-4 bg-slate-50 rounded-xl border-none text-sm outline-none resize-none" placeholder="Observaciones de la sesión..."></textarea>`; } }
+        function saveTrainingResult() { const pKey = document.getElementById('res-patient').value; const score = document.getElementById('res-score').value; const mistakes = document.getElementById('res-mistakes') ? document.getElementById('res-mistakes').value : 0; let d1 = `Modo: ${trainingState.mode}`; let d2 = `Resultado: ${score}`; if(trainingState.mode === 'COGNITIVO') d2 += ` | Errores: ${mistakes}`; const logs = JSON.parse(localStorage.getItem('logs')); logs.push({ fecha: new Date().toLocaleString('es-ES'), fisio: window.currFisioUser || "Auto", paciente: pKey || "invitado", tipo: 'ENTRENAMIENTO', d1, d2, d3: "Active Lab" }); localStorage.setItem('logs', JSON.stringify(logs)); showToast("Datos Guardados", "success"); if(window.currFisio) goTo('fisio-dash'); else goTo('landing'); }
+
+        window.onload = initApp;
+    </script>
+</body>
+</html>
